@@ -1,2 +1,2 @@
-# TelemHost-Software-FE8
-Telemetry Host embedded software
+# TelemHost-Firmware-FE8
+Telemetry Host embedded firmware
