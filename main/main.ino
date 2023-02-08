@@ -118,6 +118,7 @@ void dyingGasp(){
 
 void writeLine(uint32_t id, uint8_t len, float* bytes){
   Serial.println("IMU");
+  digitalWrite(29, HIGH);
   t = micros(); // records the time it reads the message
   // print the data in a csv format
   file.print(id, HEX);
@@ -158,16 +159,20 @@ void imu_callback(XsensEventFlag_t event, XsensEventData_t *mtdata)
           if( mtdata->type == XSENS_EVT_TYPE_FLOAT3 )
             {
                 writeLine(0x999, 3, mtdata->data.f4x3);
-                digitalWrite(29, HIGH);
             }
             break;
         case XSENS_EVT_EULER:
           if( mtdata->type == XSENS_EVT_TYPE_FLOAT3 )
             {
                 writeLine(0xAAA, 3, mtdata->data.f4x3);
-                digitalWrite(29, HIGH);
             }
             break;
+        case XSENS_EVT_FREE_ACCELERATION:
+          if(mtdata->type == XSENS_EVT_TYPE_FLOAT3)
+            {
+                writeLine(0xBBB), 3, mtdata->data.f4x3);
+            }
+          
     }
 }
 
