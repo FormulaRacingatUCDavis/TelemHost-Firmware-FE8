@@ -25,20 +25,17 @@ void send_frame(uint8_t* buf, uint8_t len)
   Serial2.write(FRAME_END);
 }
 
-#define MSG_VCU_ID 0x01
-#define MSG_BMS_ID 0x01
-
 void send_can_wireless(CAN_message_t msg)
 {
   uint8_t frame[10] = {};
-  frame[0] = msg.id;
-  frame[1] = msg.dlc; 
-  for(uint8_t i = 0; i < msg.dlc; i++)
+  frame[0] = msg.id&0xFF;
+  frame[1] = (msg.id>>8)&0xFF;
+  for(uint8_t i = 0; i < msg.len; i++)
   {
     frame[i+2] = msg.buf[i]; 
   }
 
-  send_frame(&frame, msg.dlc+2); 
+  send_frame(frame, msg.len+2); 
 }
 
 

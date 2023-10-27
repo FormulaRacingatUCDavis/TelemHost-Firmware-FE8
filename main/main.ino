@@ -69,13 +69,13 @@ void loop(){
     if(Can0.available()){
       Can0.read(msg);
 			write_message_to_file(msg);
-      send_wireless_data(msg);
+      send_can_wireless(msg);
 		}
 		// check the 1st CAN bus to read data
 		if(Can1.available()){
 			Can1.read(msg);
       write_message_to_file(msg);
-      send_wireless_data(msg);
+      send_can_wireless(msg);
 		}
    
 		// Inbound serial data needs to be parsed
