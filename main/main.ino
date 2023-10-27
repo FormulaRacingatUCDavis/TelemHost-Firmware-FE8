@@ -19,18 +19,19 @@ void send_wireless_data(CAN_message_t msg);
 
 //Variables and initialization
 File file;
+int log_num = 0;
 bool isRunning = true;
 unsigned long gps_data;
 xsens_interface_t imu_interface = XSENS_INTERFACE_RX(&imu_callback);
 
 void setup(){
 	// LED's
-	pinMode(13, OUTPUT); // Teensy's LED
+	pinMode(13, INPUT);
 	pinMode(24, INPUT);
-	pinMode(27, OUTPUT); // LED0
-	digitalWrite(27, HIGH);
-	pinMode(28, OUTPUT); // LED1
-	pinMode(29, OUTPUT); // LED2
+	//pinMode(27, OUTPUT); // LED0
+	//digitalWrite(27, HIGH);
+	//pinMode(28, OUTPUT); // LED1
+	//pinMode(29, OUTPUT); // LED2
 	
 	// initialize data protocalls
   Serial.begin(112500);    // serial port UART
@@ -46,17 +47,17 @@ void setup(){
 	// see if the card is present and can be initialized:
 	SD.begin(BUILTIN_SDCARD);
 	//delay(1000);
-	
+
+  Serial2.println("Connected!\n    ");
 	file = SD.open(nextFileName(), FILE_WRITE); // helper function nextFileName creates a new file so previous data isn't overwritten
-	if(!file)
+	if(file)
   {
-		digitalWrite(28, HIGH);
+      Serial2.printf("Log file number: %i\n", log_num);
   }
 
 	//Dying Gasp Setup - NEED TO ADD BIGGER CAP, OTHERWISE SD CARD WON'T OPEN
 	attachInterrupt(24, dyingGasp, FALLING); //go to dyingGasp function when pin 24 goes from HIGH to LOW  
-
-  Serial2.println("Connected!\n    ");
+  Serial2.printf("Log file number: %i\n", log_num);
 }
 
 void loop(){
@@ -113,7 +114,7 @@ void write_message_to_file(CAN_message_t msg){
 
 void writeLine(uint32_t id, uint8_t len, float* bytes){
   Serial.println("IMU");
-  digitalWrite(29, HIGH);
+  //digitalWrite(29, HIGH);
   unsigned long t = micros(); // records the time it reads the message
   // print the data in a csv format
   file.print(id, HEX);
@@ -175,8 +176,9 @@ void imu_callback(XsensEventFlag_t event, XsensEventData_t *mtdata)
 void send_wireless_data(CAN_message_t msg)
 {
   // arduino IDE gets mad if you declare variables inside the switch
-  static unsigned int last_vcu_state = 0;
-  unsigned int vcu_state = 0;
+  static int last_vcu_state = -1;
+  static int last_mc_state = -1;
+  int vcu_state = 0;
   int16_t temp_phaseA = 0;
   int16_t temp_phaseB = 0;
   int16_t temp_phaseC = 0;
@@ -186,27 +188,102 @@ void send_wireless_data(CAN_message_t msg)
   switch(msg.id)
   {
     case 0x766:  // VCU status
-      
       vcu_state = msg.buf[4]; 
       if(last_vcu_state != vcu_state)
       {
-        Serial2.printf("VCU state transition: %u -> %u\n", last_vcu_state, vcu_state);
+        //Serial2.printf("VCU state transition: %u -> %u\n", last_vcu_state, vcu_state);
         last_vcu_state = vcu_state;
       }
       break;
     case 0x0C0:  // torque request
       torque = ((msg.buf[1] << 8) + msg.buf[0])/10;
-      Serial2.printf("Torque request: %uNm\n", torque);
+      //Serial2.printf("HV Request: %u\n", msg.buf[5]); 
+      //Serial2.printf("Torque request: %uNm\n", torque);
       break;
     case 0x380:  // BMS status
-      Serial2.printf("BMS temp: %uC\n", msg.buf[0]);
+     // Serial2.printf("BMS temp: %uC\n", msg.buf[0]);
       break;
+    /*
     case 0x0A0: // MC temps 1
       temp_phaseA = ((msg.buf[1] << 8) + msg.buf[0])/10;
       temp_phaseB = ((msg.buf[3] << 8) + msg.buf[2])/10;
       temp_phaseC = ((msg.buf[5] << 8) + msg.buf[4])/10;
       temp_gate_driver = ((msg.buf[7] << 8) + msg.buf[6])/10;
       Serial2.printf("Phase A: %iC, Phase B: %iC, Phase C: %iC, Gate Driver: %iC\n", temp_phaseA, temp_phaseB, temp_phaseC, temp_gate_driver);
+      break;
+    */
+    /*  
+    case 0x0A2: // MC temps 3
+      temp_phaseA = ((msg.buf[5] << 8) + msg.buf[4])/10;
+      Serial2.printf("Motor Temp: %iC\n", temp_phaseA);
+    */
+    /*case 0x0AA:  // MC internal states
+      if(msg.buf[0] == last_mc_state)
+      {
+        return;
+      }
+      last_mc_state = msg.buf[0];
+      
+      Serial2.print("MC State: ");
+      switch(msg.buf[0])
+      {
+        case 0: 
+          Serial2.print("Start\n");
+          break;
+        case 1: 
+          Serial2.print("Precharge Init\n");
+          break;
+        case 2: 
+          Serial2.print("Precharge Active\n");
+          break;
+        case 3:
+          Serial2.print("Precharge Complete\n");
+          break;
+        case 4: 
+          Serial2.print("Wait\n");
+          break;
+        case 5: 
+          Serial2.print("Ready\n");
+          break;
+        case 6: 
+          Serial2.print("Motor Running\n");
+          break;
+        case 7: 
+          Serial2.print("Blink Fault Code\n");
+          break;
+        case 14: 
+          Serial2.print("Shutdown in progress\n");
+          break;
+        case 15: 
+          Serial2.print("Recycle power\n");
+          break;
+        default: 
+          Serial2.print("Invalid state!\n");
+          break;
+      }
+      break;
+    */
+    /*
+    case 0x400:
+      Serial2.printf("Temps: MC In/Out: %uC/%uC, MTR In/Out: %uC/%uC\n", 
+                    msg.buf[0],msg.buf[1],msg.buf[2],msg.buf[3]);
+      Serial2.printf("Pressures: MC In/Out: %upsi/%upsi, MTR In/Out: %upsi/%upsi\n", 
+                    msg.buf[4],msg.buf[5],msg.buf[6],msg.buf[7]);
+                    
+      break;
+    */
+    case 0x401:
+      Serial2.printf("Air Temps: MC In/Out: %uC/%uC, MTR In/Out: %uC/%uC\n", 
+                    msg.buf[0],msg.buf[1],msg.buf[2],msg.buf[3]);
+                    
+      break;
+    case 0x500: // front wheel speed
+      torque = ((msg.buf[0] << 8) + msg.buf[1]);
+      Serial2.printf("FWS: %irpm\n", torque);
+      break;
+    case 0x0A5: // MC motor position
+      torque = ((msg.buf[3] << 8) + msg.buf[2]);
+      Serial2.printf("RWS: %irpm\n", torque);
       break;
   }
 }
@@ -237,6 +314,8 @@ char* nextFileName(){
     fileName[2] = nums[2];
     File1 = SD.open(fileName, FILE_READ);
   }
+
+  log_num = fileNum;
   //Returns the file name;
   //free(nums);
   return fileName;
@@ -261,6 +340,6 @@ void dyingGasp(){
 	file.print("\n");
 	file.print(0x800);
 	file.close();
-  digitalWrite(13, HIGH);
+  //digitalWrite(13, HIGH);
 	while(true){} //the shadow realm
 }
