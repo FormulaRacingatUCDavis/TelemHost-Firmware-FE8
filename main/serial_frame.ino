@@ -2,6 +2,14 @@
 #define FRAME_START 0x0A
 #define FRAME_END 0x0B
 
+uint32_t last_0A0 = 0;
+uint32_t last_0A1 = 0;
+uint32_t last_0A2 = 0;
+uint32_t last_0A5 = 0;
+uint32_t last_0A7 = 0;
+uint32_t last_0AA = 0;
+uint32_t last_0AB = 0;
+
 void send_byte_with_escape(uint8_t b)
 {
   if(b == ESCAPE_CHAR)
@@ -27,6 +35,56 @@ void send_frame(uint8_t* buf, uint8_t len)
 
 void send_can_wireless(CAN_message_t msg)
 {
+  //trying to slow down motor controller messages
+  uint32_t t = millis();
+  switch(msg.id){
+    case 0x0A0: 
+      if((t-last_0A0) < 1000)
+        return;
+      else
+        last_0A0 = t; 
+      break;
+    case 0x0A1: 
+      if((t-last_0A1) < 1000)
+        return;
+      else
+        last_0A1 = t; 
+      break;
+    case 0x0A2: 
+      if((t-last_0A2) < 1000)
+        return;
+      else
+        last_0A2 = t; 
+      break;
+    case 0x0A5: 
+      if((t-last_0A5) < 1000)
+        return;
+      else
+        last_0A5 = t; 
+      break;
+    case 0x0A7: 
+      if((t-last_0A7) < 1000)
+        return;
+      else
+        last_0A7 = t; 
+      break;
+    case 0x0AA: 
+      if((t-last_0AA) < 1000)
+        return;
+      else
+        last_0AA = t; 
+      break;
+    case 0x0AB: 
+      if((t-last_0AB) < 1000)
+        return;
+      else
+        last_0AB = t; 
+      break;
+    case 0x0C0: 
+      return; 
+      break;
+  }
+
   uint8_t frame[10] = {};
   frame[0] = msg.id&0xFF;
   frame[1] = (msg.id>>8)&0xFF;

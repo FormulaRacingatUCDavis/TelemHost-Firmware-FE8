@@ -57,7 +57,6 @@ void setup(){
 
 	//Dying Gasp Setup - NEED TO ADD BIGGER CAP, OTHERWISE SD CARD WON'T OPEN
 	attachInterrupt(24, dyingGasp, FALLING); //go to dyingGasp function when pin 24 goes from HIGH to LOW  
-  Serial2.printf("Log file number: %i\n", log_num);
 }
 
 void loop(){
