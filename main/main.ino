@@ -34,9 +34,9 @@ void setup(){
 	//pinMode(29, OUTPUT); // LED2
 	
 	// initialize data protocalls
-  Serial.begin(112500);    // serial port UART
+  Serial.begin(115200);    // serial port UART
 	Serial1.begin(2000000);  //xsens uart
-  Serial2.begin(9600, SERIAL_8N1);  // ESP32 UART
+  Serial2.begin(115200, SERIAL_8N1);  // ESP32 UART
 
 	//initialize the can buses
 	Can0.begin(500000);
@@ -171,121 +171,6 @@ void imu_callback(XsensEventFlag_t event, XsensEventData_t *mtdata)
             }
             break;
     }
-}
-
-void send_wireless_data(CAN_message_t msg)
-{
-  // arduino IDE gets mad if you declare variables inside the switch
-  static int last_vcu_state = -1;
-  static int last_mc_state = -1;
-  int vcu_state = 0;
-  int16_t temp_phaseA = 0;
-  int16_t temp_phaseB = 0;
-  int16_t temp_phaseC = 0;
-  int16_t temp_gate_driver = 0;
-  unsigned int torque = 0;
-
-  switch(msg.id)
-  {
-    case 0x766:  // VCU status
-      vcu_state = msg.buf[4]; 
-      if(last_vcu_state != vcu_state)
-      {
-        //Serial2.printf("VCU state transition: %u -> %u\n", last_vcu_state, vcu_state);
-        last_vcu_state = vcu_state;
-      }
-      break;
-    case 0x0C0:  // torque request
-      torque = ((msg.buf[1] << 8) + msg.buf[0])/10;
-      //Serial2.printf("HV Request: %u\n", msg.buf[5]); 
-      //Serial2.printf("Torque request: %uNm\n", torque);
-      break;
-    case 0x380:  // BMS status
-     // Serial2.printf("BMS temp: %uC\n", msg.buf[0]);
-      break;
-    /*
-    case 0x0A0: // MC temps 1
-      temp_phaseA = ((msg.buf[1] << 8) + msg.buf[0])/10;
-      temp_phaseB = ((msg.buf[3] << 8) + msg.buf[2])/10;
-      temp_phaseC = ((msg.buf[5] << 8) + msg.buf[4])/10;
-      temp_gate_driver = ((msg.buf[7] << 8) + msg.buf[6])/10;
-      Serial2.printf("Phase A: %iC, Phase B: %iC, Phase C: %iC, Gate Driver: %iC\n", temp_phaseA, temp_phaseB, temp_phaseC, temp_gate_driver);
-      break;
-    */
-    /*  
-    case 0x0A2: // MC temps 3
-      temp_phaseA = ((msg.buf[5] << 8) + msg.buf[4])/10;
-      Serial2.printf("Motor Temp: %iC\n", temp_phaseA);
-    */
-    /*case 0x0AA:  // MC internal states
-      if(msg.buf[0] == last_mc_state)
-      {
-        return;
-      }
-      last_mc_state = msg.buf[0];
-      
-      Serial2.print("MC State: ");
-      switch(msg.buf[0])
-      {
-        case 0: 
-          Serial2.print("Start\n");
-          break;
-        case 1: 
-          Serial2.print("Precharge Init\n");
-          break;
-        case 2: 
-          Serial2.print("Precharge Active\n");
-          break;
-        case 3:
-          Serial2.print("Precharge Complete\n");
-          break;
-        case 4: 
-          Serial2.print("Wait\n");
-          break;
-        case 5: 
-          Serial2.print("Ready\n");
-          break;
-        case 6: 
-          Serial2.print("Motor Running\n");
-          break;
-        case 7: 
-          Serial2.print("Blink Fault Code\n");
-          break;
-        case 14: 
-          Serial2.print("Shutdown in progress\n");
-          break;
-        case 15: 
-          Serial2.print("Recycle power\n");
-          break;
-        default: 
-          Serial2.print("Invalid state!\n");
-          break;
-      }
-      break;
-    */
-    /*
-    case 0x400:
-      Serial2.printf("Temps: MC In/Out: %uC/%uC, MTR In/Out: %uC/%uC\n", 
-                    msg.buf[0],msg.buf[1],msg.buf[2],msg.buf[3]);
-      Serial2.printf("Pressures: MC In/Out: %upsi/%upsi, MTR In/Out: %upsi/%upsi\n", 
-                    msg.buf[4],msg.buf[5],msg.buf[6],msg.buf[7]);
-                    
-      break;
-    */
-    case 0x401:
-      Serial2.printf("Air Temps: MC In/Out: %uC/%uC, MTR In/Out: %uC/%uC\n", 
-                    msg.buf[0],msg.buf[1],msg.buf[2],msg.buf[3]);
-                    
-      break;
-    case 0x500: // front wheel speed
-      torque = ((msg.buf[0] << 8) + msg.buf[1]);
-      Serial2.printf("FWS: %irpm\n", torque);
-      break;
-    case 0x0A5: // MC motor position
-      torque = ((msg.buf[3] << 8) + msg.buf[2]);
-      Serial2.printf("RWS: %irpm\n", torque);
-      break;
-  }
 }
 
 // names files 000, 001, etc.
